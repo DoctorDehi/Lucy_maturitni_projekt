@@ -1,0 +1,13 @@
+[Unit]
+Description=Lucy Video Stream Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/dev/Lucy/video_stream/
+ExecStart=/usr/local/bin/node /home/pi/dev/Lucy/video_stream/videoStream.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

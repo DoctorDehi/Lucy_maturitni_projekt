@@ -1,0 +1,13 @@
+[Unit]
+Description=Lucy Modules Service
+
+[Service]
+Restart=always
+StartLimitBurst=0
+StandardOutput=syslog
+StandardError=syslog
+ExecStart=/home/pi/dev/env/dev/bin/python /home/pi/dev/Lucy/moduly/rpi/module_loop.py
+
+[Install]
+WantedBy=multi-user.target
+

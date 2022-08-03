@@ -1,0 +1,11 @@
+[Unit]
+Description=Lucy Web Application
+
+[Service]
+Restart=on-failure
+StartLimitBurst=0
+WorkingDirectory=/home/pi/dev/Lucy/lucy_webapp
+ExecStart=/home/pi/dev/env/dev/bin/gunicorn lucy_webapp.wsgi:application --bind 0.0.0.0:8000
+
+[Install]
+WantedBy=multi-user.target

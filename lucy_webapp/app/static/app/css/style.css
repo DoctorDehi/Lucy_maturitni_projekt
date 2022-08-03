@@ -1,0 +1,125 @@
+body {
+	box-sizing: border-box;
+}
+
+
+#content {
+	padding-top: 1vh;
+}
+
+#camera {
+	width: 100vw;
+	max-height: 70vh;
+	display: flex;
+}
+
+#camera #camera__img {
+	width: 100%;
+	height: 100%;
+}
+
+
+#movement-control {
+  	padding-left: 1vw;
+  	display: block;
+}
+
+#powerSlider {
+	max-width: 30vw;
+}
+
+#arrows {
+	max-width: 30vw;
+}
+
+#arrows__grid {
+	display: grid;
+  	grid-template-columns:  10vw 10vw 10vw;
+  	grid-template-rows:  auto auto auto;
+}
+
+#arrows__grid .btn--arrow {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 9vw;
+	height: 9vw;
+	max-width: 90px;
+	max-height: 90px;
+	margin-bottom: 1vw;
+}
+
+#arrows .arrow {
+	width: 8vw;
+	height: 8vw;
+}
+
+#module-data {
+	margin-top: 2vh;
+	margin-left: 2vw;
+	color: #212529;
+   	padding: 10px;
+}
+
+#module_data p {
+	margin-top: 0;
+	padding-top: 0;
+}
+
+@media (max-width: 420px) {
+
+	#arrows {
+		max-width: 60vw;
+	}
+
+	#arrows__grid {
+		display: grid;
+  		grid-template-columns:  20vw 20vw 20vw;
+  		grid-template-rows:  auto auto auto;
+	}
+
+	#arrows__grid .btn--arrow {
+		width: 19vw;
+		height: 19vw;
+	}
+
+}
+
+@media (min-width: 992px) {
+	#camera {
+		width: 50vw;
+		max-height: 100vh;
+	}
+
+	#movement-control {
+	  	min-width: 300px;
+  	  	padding-right: 1vw;
+	}
+
+	#powerSlider {
+		width: 290px;
+	}
+
+	#arrows__grid {
+		display: grid;
+	  	grid-template-columns:  100px 100px 100px;
+	  	grid-template-rows:  auto auto auto;
+	}
+	#arrows__grid .btn--arrow {
+		margin-bottom: 10px;
+	}
+
+}
+
+
+.unclickable {
+	pointer-events: none;
+}
+
+input[type=range]::range-track {
+  width: 100%;
+  height: 20px;
+  border-radius: 10px;
+  background-color: #eee;
+  border: 2px solid #ccc;
+}

@@ -1,0 +1,324 @@
+/*
+############
+# COMMANDS #
+############
+
+COMMAND_CONTINUE
+COMMAND_STOP
+COMMAND_RIDE_FORWARD
+COMMAND_FORWARD_STEER_LEFT
+COMMAND_FORWARD_STEER_RIGHT
+COMMAND_RIDE_BACKWARD
+COMMAND_BACKWARD_STEER_LEFT
+COMMAND_BACKWARD_STEER_RIGHT
+COMMAND_TURN_LEFT
+COMMAND_TURN_RIGHT
+
+COMMAND_SEND_STATE
+
+COMMAND_SET_PWM_BYTE
+COMMAND_SET_SPEED_LEVEL
+COMMAND_SET_SAFE_STOP_INTENSITY
+COMMAND_SET_FREE_SPACE_MULTIPLIER
+*/
+
+
+// ### MOVEMENT COMMANDS ###
+const COMMANDS_NEED_CONTINUE = [
+	"COMMAND_CONTINUE",
+	"COMMAND_RIDE_FORWARD", 
+	"COMMAND_FORWARD_STEER_LEFT", 
+	"COMMAND_FORWARD_STEER_RIGHT", 
+	"COMMAND_RIDE_BACKWARD", 
+	"COMMAND_BACKWARD_STEER_LEFT", 
+	"COMMAND_BACKWARD_STEER_RIGHT", 
+	"COMMAND_TURN_LEFT", 
+	"COMMAND_TURN_RIGHT"
+]
+
+var pressed_keys = new Set();
+var old_pressed_keys = new Set();
+var last_command = null;
+// pressed_keys.add("UP");
+
+setInterval(function(){ 
+	document.getElementById("keys").innerHTML = Array.from(pressed_keys).join(' '); 
+}, 50);
+
+setInterval(function(){ 
+	document.getElementById("command").innerHTML = last_command; 
+}, 50)
+
+
+setInterval(function(){ 
+  if (document.visibilityState == "visible" && last_command) {
+  	if (COMMANDS_NEED_CONTINUE.includes(last_command)) {
+	    send_command('COMMAND_CONTINUE');
+  	}
+  }
+}, 1000);
+
+setInterval(function() {refresh_module_data()}, 1000)
+
+
+document.addEventListener('keydown', function(event) {
+	switch (event.code){
+		case 'ArrowUp':
+			pressed_keys.add("UP");
+			break;
+		case 'ArrowDown':
+			pressed_keys.add("DOWN");
+			break;
+		case 'ArrowLeft':
+			pressed_keys.add("LEFT");
+			break;
+		case 'ArrowRight':
+			pressed_keys.add("RIGHT");
+			break;
+	}
+
+	update_state();
+});
+
+document.addEventListener('keyup', function(event) {
+	switch (event.code){
+		case 'ArrowUp':
+			pressed_keys.delete("UP");
+			break;
+		case 'ArrowDown':
+			pressed_keys.delete("DOWN");
+			break;
+		case 'ArrowLeft':
+			pressed_keys.delete("LEFT");
+			break;
+		case 'ArrowRight':
+			pressed_keys.delete("RIGHT");
+			break;
+	}
+
+	update_state();
+});
+
+
+function update_state() {
+	if (eqSet(pressed_keys, old_pressed_keys)) {
+		return;	
+	}
+	else {
+		old_pressed_keys = new Set(pressed_keys);
+	}
+
+	if (pressed_keys.size == 0) {
+   		send_command("COMMAND_STOP");
+   		return;
+   	}
+    else if (pressed_keys.size > 2) {
+    	return;
+    }
+	else {
+		command = map_keys_with_command(pressed_keys);
+		send_command(command);
+		return;
+    }
+}
+
+function map_keys_with_command(pressed_keys) {
+	if (pressed_keys.has("UP")) {
+    	if (pressed_keys.size == 1)
+    		return "COMMAND_RIDE_FORWARD";
+        else if (pressed_keys.has("LEFT"))
+        	return "COMMAND_FORWARD_STEER_LEFT";
+        else if (pressed_keys.has("RIGHT"))
+        	return "COMMAND_FORWARD_STEER_RIGHT";
+        else if (pressed_keys.has("DOWN")) {
+        	return "COMMAND_STOP";
+        }
+    }
+
+    else if (pressed_keys.has("DOWN")) {
+    	if (pressed_keys.size == 1)
+    		return "COMMAND_RIDE_BACKWARD";
+        else if (pressed_keys.has("LEFT"))
+        	return "COMMAND_BACKWARD_STEER_LEFT";
+        else if (pressed_keys.has("RIGHT"))
+        	return "COMMAND_BACKWARD_STEER_RIGHT";
+    }
+                          
+    else if (pressed_keys.has("LEFT")) {
+    	return "COMMAND_TURN_LEFT";
+    }
+
+    else if (pressed_keys.has("RIGHT")) {
+    	return "COMMAND_TURN_RIGHT";
+    }
+
+    return null;
+}
+
+$('.btn--arrow').mousedown(function(e) {
+  if (e.target.value) {
+	send_command(e.target.value);
+  }
+});
+
+$('.btn--arrow').mouseup(function(e) {
+	send_command("COMMAND_STOP");
+});
+
+$('.btn--arrow').on('touchstart', function(e) {
+  if (e.target.value) {
+	send_command(e.target.value);
+  }
+});
+
+$('.btn--arrow').on('touchend', function(e) {
+	send_command("COMMAND_STOP");
+});
+
+function send_command(command, value=0) {
+	last_command = command;
+	$.ajax({
+		headers: { "X-CSRFToken": csrf_token },
+		url: send_command_url,
+		type: 'post',
+		dataType: 'json',
+		data: {
+			command : command,
+			value: value,
+			timestamp: Date.now(),
+		},
+		success: function(response){
+			document.getElementById("response").innerHTML = response.status;
+			document.getElementById("response-time").innerHTML = Date.now();
+    		if (response.status == "ERROR") {
+    			alert(response.message);
+    			pressed_keys = new Set();
+    		}
+ 		},
+	});
+}
+
+function eqSet(as, bs) {
+    if (as.size !== bs.size) return false;
+    for (var a of as) if (!bs.has(a)) return false;
+    return true;
+}
+
+// ### POWER SLIDER ###
+var slider = document.getElementById("powerSlider");
+var output = document.getElementById("powerSliderValue");
+output.innerHTML = slider.value; // Display the default slider value
+
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+  output.innerHTML = this.value;
+  send_command("COMMAND_SET_PWM_BYTE", this.value);
+}
+
+// SYSTEM SHUTDOWN
+function system_shutdown_countdown() {
+    $("#system_shutdown-modal").modal({
+        backdrop: 'static',
+        keyboard: false
+    });
+    $("#system_shutdown-modal").modal('show');
+
+    $("#system_shutdown-modal__waiting").show();
+	$("#system_shutdown-modal__ready").hide();
+
+	var seconds = 30; //**change for any number you want, it's the seconds **//
+	function secondPassed() {
+	    var minutes = Math.round((seconds - 30)/60);
+	    var remainingSeconds = seconds % 60;
+	    if (remainingSeconds < 10) {
+	        remainingSeconds = "0" + remainingSeconds;  
+	    }
+	    document.getElementById('system_shutdown-modal__countdown').innerHTML = minutes + ":" + remainingSeconds;
+	    if (seconds == 0) {
+	    	$("#system_shutdown-modal__waiting").hide();
+	    	$("#system_shutdown-modal__ready").show();
+	    	clearInterval(countdownTimer);
+	    } else {
+	        seconds--;
+	    }
+	}
+	var countdownTimer = setInterval(secondPassed, 1000);
+}
+
+$("#btn-system_shutdown_confirm").click(function(){
+	$("#system_shutdown_confirm-modal").hide();
+	$.ajax({
+		headers: { "X-CSRFToken": csrf_token },
+		url: '/_system_shutdown',
+		type: 'get',
+		success: function(response){
+			system_shutdown_countdown();
+ 		},
+ 		error: function(response) {
+ 			alert(response.responseText);
+ 		}
+	});
+});
+
+
+// MODULE DATA
+function refresh_module_data() {
+	$.ajax({
+		headers: { "X-CSRFToken": csrf_token },
+		url: '/_get_module_data',
+		type: 'get',
+		success: function(response){
+			module_data = response["module_data"];
+			// delete old module data
+		  	$('#module-data__content').empty();
+
+			// display new module data
+			if (Object.keys(module_data).length == 0) {
+				document.getElementById("module-data__content").innerHTML = "Nejsou dostupná žádná data";
+				return;
+			}
+			for (var module in  module_data) {
+
+				var module_div = document.createElement("div");
+				module_div.classList.add("module");
+				var h_element = document.createElement("H5");
+			  	var text_element = document.createTextNode(`Modul: ${module}`);
+			  	h_element.appendChild(text_element);
+			  	module_div.append(h_element);
+
+			  	for (var variable in module_data[module]) {
+			  		var var_element = document.createElement("p");
+			  		var_element.innerHTML = variable + ": ";
+			  		var val_element = document.createElement("span");
+			  		var val_text_element = document.createTextNode(module_data[module][variable])
+
+			  		val_element.appendChild(val_text_element);
+			  		var_element.append(val_element);
+
+			  		module_div.appendChild(var_element);
+			  	}
+
+				$('#module-data__content').append(module_div);
+    
+			}
+ 
+ 		},
+ 		error: function(response) {
+ 			document.getElementById("module-data__content").innerHTML = "Nepodařilo se načíst data z modulů!";
+ 		}
+	});
+}
+
+
+function init_control() {
+	send_command("COMMAND_SET_PWM_BYTE", slider.value);
+	refresh_module_data();
+}
+
+init_control();
+
+// PRO ZOBRAZENÍ BLIŽŠÍCH INFORMACÍ ==> ODKOMENTOVAT
+// debug = true;
+// if (debug) {
+// 	$("#debug").show();
+// }
